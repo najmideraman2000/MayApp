@@ -1,4 +1,5 @@
 package com.najmi.test.MayApp.Models;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Entity
@@ -11,16 +12,18 @@ public class Product {
     private Integer id;
 
     @Column(name = "product_name", nullable = false)
+    @JsonProperty("name")
     private String name;
 
     @Column(name = "product_desc")
+    @JsonProperty("description")
     private String description;
 
     @Column(name = "product_price")
+    @JsonProperty("price")
     private Double price;
 
-    public Product(Integer id, String name, String description, Double price) {
-        this.id = id;
+    public Product(String name, String description, Double price) {
         this.name = name;
         this.description = description;
         this.price = price;

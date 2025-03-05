@@ -3,80 +3,95 @@ package com.najmi.test.MayApp.Controller;
 import com.najmi.test.MayApp.Models.Order;
 import com.najmi.test.MayApp.Models.Product;
 import com.najmi.test.MayApp.Repo.OrderRepo;
-import com.najmi.test.MayApp.Repo.ProductRepo;
+import com.najmi.test.MayApp.Service.OrderService;
+import com.najmi.test.MayApp.Service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.*;
 
-import com.twilio.Twilio;
-import com.twilio.converter.Promoter;
-import com.twilio.rest.api.v2010.account.Message;
-import com.twilio.type.PhoneNumber;
+import com.najmi.test.MayApp.Repo.ProductRepo;
 
-import java.net.URI;
-import java.math.BigDecimal;
-
-import java.util.List;
 import java.util.Map;
 
 @RestController
 public class APIController {
 
-    public static final String ACCOUNT_SID = "//";
-    public static final String AUTH_TOKEN = "//";
+    @Autowired
+    private OrderService orderService;
 
     @Autowired
-    private ProductRepo productRepo;
+    private ProductService productService;
+
     @Autowired
     private OrderRepo orderRepo;
 
-    @GetMapping(value = "/")
-    public String getPage() {
-        return "Hello World";
-    }
+    @Autowired
+    private ProductRepo productRepo;
 
-    @GetMapping(value="/products")
-    public List<Product> getProducts() {
-        return productRepo.findAll();
-    }
-
-    @GetMapping(value="/orders")
-    public List<Order> getOrders() {
-        return orderRepo.findAll();
-    }
-
-    @PostMapping(value = "/add_product")
-    public void saveProduct(@RequestBody Product product) {
-        productRepo.save(product);
-    }
+    // ORDER ENDPOINTS
 
     @PostMapping(value = "/make_order")
     public void makeOrder(@RequestBody Map<String, Object> request) {
-
-        int productId = (int) request.get("product");  // Extract product ID
-        String phoneNumber = (String) request.get("phoneNumber");
-
-        // Fetch product from database
-        Product product = productRepo.findById(productId).orElseThrow(() -> new RuntimeException("Product not found"));
-
-        // Create order object
-        Order order = new Order();
-        order.setProduct(product);
-        order.setPhoneNumber(phoneNumber);
-
-        // Send SMS via Twilio
-        Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
-        Message message = Message.creator(
-                new PhoneNumber(phoneNumber),
-                new PhoneNumber("+19896584188"),
-                "You have ordered " + product.getName() + " - " + product.getDescription()
-        ).create();
-
-        // Save order
-        orderRepo.save(order);
-
+        orderService.makeOrder(request);
     }
 
+    @GetMapping(value = "/orders")
+    public Page<Order> getOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return orderService.getAllOrders(pageable);
+    }
+
+    @GetMapping(value = "/order/{id}")
+    public Order getOrderById(@PathVariable int id) {
+        return orderService.getOrderById(id);
+    }
+
+    @PutMapping(value = "/update_order/{id}")
+    public Order updateOrder(@PathVariable int id, @RequestBody Map<String, Object> request) {
+        int productId = (int) request.get("product");
+        String phoneNumber = (String) request.get("phoneNumber");
+
+        return orderService.updateOrder(id, productId, phoneNumber);
+    }
+
+    @DeleteMapping(value = "/delete_order/{id}")
+    public String deleteOrder(@PathVariable int id) {
+        orderService.deleteOrder(id);
+        return "Order deleted successfully";
+    }
+
+    // PRODUCT ENDPOINTS
+
+    @GetMapping(value = "/products")
+    public Page<Product> getProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return productService.getAllProducts(pageable);
+    }
+
+    @GetMapping(value = "/product/{id}")
+    public Product getProductById(@PathVariable int id) {
+        return productService.getProductById(id);
+    }
+
+    @PostMapping(value = "/add_product")
+    public Product addProduct(@RequestBody Product product) {
+        return productService.addProduct(product);
+    }
+
+    @PutMapping(value = "/update_product/{id}")
+    public Product updateProduct(@PathVariable int id, @RequestBody Product product) {
+        return productService.updateProduct(id, product);
+    }
+
+    @DeleteMapping(value = "/delete_product/{id}")
+    public String deleteProduct(@PathVariable int id) {
+        productService.deleteProduct(id);
+        return "Product deleted successfully";
+    }
 }
