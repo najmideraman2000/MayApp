@@ -1,2 +1,2 @@
 # MayApp
-Java Assessment for Maybank
+Java App
